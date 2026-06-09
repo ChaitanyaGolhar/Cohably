@@ -15,60 +15,67 @@ const RentCyclePage = lazy(() => import('./pages/RentCyclePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
+const ErrorPage = lazy(() => import('./components/ErrorPage'));
+
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <Navigate to="/dashboard" replace />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/signup',
-    element: <SignupPage />,
-  },
-  {
-    element: <ProtectedRoute />,
+    errorElement: <ErrorPage />,
     children: [
       {
-        path: '/onboarding',
-        element: <OnboardingPage />,
+        path: '/',
+        element: <Navigate to="/dashboard" replace />,
       },
       {
-        path: '/dashboard',
-        element: <DashboardPage />,
+        path: '/login',
+        element: <LoginPage />,
       },
       {
-        path: '/expenses',
-        element: <ExpenseHistoryPage />,
+        path: '/signup',
+        element: <SignupPage />,
       },
       {
-        path: '/expenses/add',
-        element: <AddExpensePage />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: '/onboarding',
+            element: <OnboardingPage />,
+          },
+          {
+            path: '/dashboard',
+            element: <DashboardPage />,
+          },
+          {
+            path: '/expenses',
+            element: <ExpenseHistoryPage />,
+          },
+          {
+            path: '/expenses/add',
+            element: <AddExpensePage />,
+          },
+          {
+            path: '/expenses/:id',
+            element: <ExpenseDetailPage />,
+          },
+          {
+            path: '/settle',
+            element: <SettlePage />,
+          },
+          {
+            path: '/rent',
+            element: <RentCyclePage />,
+          },
+          {
+            path: '/settings',
+            element: <SettingsPage />,
+          },
+        ],
       },
       {
-        path: '/expenses/:id',
-        element: <ExpenseDetailPage />,
+        path: '*',
+        element: <NotFoundPage />,
       },
-      {
-        path: '/settle',
-        element: <SettlePage />,
-      },
-      {
-        path: '/rent',
-        element: <RentCyclePage />,
-      },
-      {
-        path: '/settings',
-        element: <SettingsPage />,
-      },
-    ],
-  },
-  {
-    path: '*',
-    element: <NotFoundPage />,
-  },
+    ]
+  }
 ]);
 
 export default function App() {
