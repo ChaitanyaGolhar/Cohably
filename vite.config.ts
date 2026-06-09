@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://cohably-backend.onrender.com',
+        target: 'https://cohably-backend-production.up.railway.app/',
         changeOrigin: true,
       },
     },
