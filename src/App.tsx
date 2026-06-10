@@ -13,6 +13,14 @@ const ExpenseDetailPage = lazy(() => import('./pages/ExpenseDetailPage'));
 const SettlePage = lazy(() => import('./pages/SettlePage'));
 const RentCyclePage = lazy(() => import('./pages/RentCyclePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const FlatHubPage = lazy(() => import('./pages/FlatHubPage'));
+const RotationsPage = lazy(() => import('./pages/RotationsPage'));
+const RotationDetailPage = lazy(() => import('./pages/RotationDetailPage'));
+const TasksPage = lazy(() => import('./pages/TasksPage'));
+const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage'));
+const BillRemindersPage = lazy(() => import('./pages/BillRemindersPage'));
+const BillDetailPage = lazy(() => import('./pages/BillDetailPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const ErrorPage = lazy(() => import('./components/ErrorPage'));
@@ -67,6 +75,38 @@ const router = createBrowserRouter([
           {
             path: '/settings',
             element: <SettingsPage />,
+          },
+          {
+            path: '/notifications',
+            element: <NotificationsPage />,
+          },
+          {
+            path: '/flat',
+            element: <FlatHubPage />,
+          },
+          {
+            path: '/flat/rotations',
+            element: <RotationsPage />,
+          },
+          {
+            path: '/flat/rotations/:rotId',
+            element: <RotationDetailPage />,
+          },
+          {
+            path: '/flat/tasks',
+            element: <TasksPage />,
+          },
+          {
+            path: '/flat/tasks/:taskId',
+            element: <TaskDetailPage />,
+          },
+          {
+            path: '/flat/bills',
+            element: <BillRemindersPage />,
+          },
+          {
+            path: '/flat/bills/:billId',
+            element: <BillDetailPage />,
           },
         ],
       },

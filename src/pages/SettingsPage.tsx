@@ -44,7 +44,6 @@ export default function SettingsPage() {
       await api.delete(`/flats/${currentFlat?.id}/members/me`);
     },
     onSuccess: () => {
-      // Clear flat state and update user membership to null
       clearFlat();
       if (user) {
         setUser({ ...user, membership: null });
@@ -54,6 +53,20 @@ export default function SettingsPage() {
     },
     onError: (error: any) => {
       addToast({ type: 'error', title: 'Failed to leave flat', message: error.response?.data?.error?.message });
+    }
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await api.delete(`/flats/${currentFlat?.id}/members/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flat', currentFlat?.id] });
+      // To immediately reflect without refresh, we could refetch members
+      window.location.reload(); 
+    },
+    onError: (error: any) => {
+      addToast({ type: 'error', title: 'Failed to remove member', message: error.response?.data?.error?.message });
     }
   });
 
@@ -133,7 +146,24 @@ export default function SettingsPage() {
                     <Avatar src={m.user?.avatarUrl} name={m.user?.name} size="sm" />
                     <span className="text-sm font-medium">{m.userId === user?.id ? 'You' : m.user?.name}</span>
                   </div>
-                  {m.role === 'ADMIN' && <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Admin</span>}
+                  <div className="flex items-center gap-2">
+                    {m.role === 'ADMIN' && <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Admin</span>}
+                    {myMembership?.role === 'ADMIN' && m.userId !== user?.id && (
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        className="h-7 text-xs px-2 py-0"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to remove ${m.user?.name} from the flat?`)) {
+                            removeMemberMutation.mutate(m.userId);
+                          }
+                        }}
+                        isLoading={removeMemberMutation.isPending}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

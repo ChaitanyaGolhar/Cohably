@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Receipt, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Receipt, ArrowUpRight, ArrowDownRight, RefreshCw, ChevronRight, ClipboardList, BellRing, Bell } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { BalanceCard } from '../components/BalanceCard';
 import { ExpenseCard } from '../components/ExpenseCard';
 import { useBalances, useRecentExpenses, useActiveRentCycle } from '../hooks/useDashboard';
+import { useRotations } from '../hooks/useRotations';
+import { useTasks } from '../hooks/useTasks';
+import { useBillReminders } from '../hooks/useBillReminders';
+import { useUnreadCount } from '../hooks/useNotifications';
 import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { AmountDisplay } from '../components/ui/AmountDisplay';
@@ -21,6 +25,11 @@ export default function DashboardPage() {
   const { data: balances, isLoading: isBalancesLoading } = useBalances(flatId);
   const { data: recentExpenses, isLoading: isExpensesLoading } = useRecentExpenses(flatId);
   const { data: activeRentCycle } = useActiveRentCycle(flatId);
+
+  const { rotations } = useRotations(flatId);
+  const { tasks } = useTasks(flatId);
+  const { bills } = useBillReminders(flatId);
+  const { unreadCount } = useUnreadCount(flatId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,12 +49,44 @@ export default function DashboardPage() {
   const totalOwed = youOwe.reduce((sum, b) => sum + b.amount, 0);
   const totalOwedToYou = owedToYou.reduce((sum, b) => sum + b.amount, 0);
 
+  // V2 Derived Data
+  const activeRotations = rotations.filter((r: any) => r.isActive && r.currentCycle && r.currentCycle.status !== 'COMPLETED' && r.currentCycle.status !== 'SKIPPED');
+  const myOverdueRotations = activeRotations.filter((r: any) => r.currentCycle?.assignedTo?.id === user?.id && r.currentCycle?.status === 'OVERDUE');
+  const myPendingRotations = activeRotations.filter((r: any) => r.currentCycle?.assignedTo?.id === user?.id && r.currentCycle?.status === 'PENDING');
+  const rotationToAlert = myOverdueRotations[0] || myPendingRotations[0];
+  const myOverdueRotationCount = myOverdueRotations.length;
+
+  const myOverdueTasks = tasks.filter((t: any) => 
+    t.assignedTo?.id === user?.id && 
+    (t.status === 'PENDING' || t.status === 'IN_PROGRESS') && 
+    t.dueDate && new Date(t.dueDate) < new Date()
+  );
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const billsDueSoon = bills.filter((b: any) => {
+    if (!b.isActive) return false;
+    const dueDate = new Date(b.nextDueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 2;
+  }).sort((a: any, b: any) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
+  const billToAlert = billsDueSoon[0];
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500">Here's your household summary.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500">Here's your household summary.</p>
+        </div>
+        <Link to="/notifications" className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <Bell className="w-6 h-6 text-gray-600" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+          )}
+        </Link>
       </div>
 
       {/* Hero Balance Card */}
@@ -145,6 +186,63 @@ export default function DashboardPage() {
               </div>
             </div>
           </Card>
+        </Link>
+      )}
+
+      {/* V2 Alert Cards */}
+      {rotationToAlert && (
+        <Link to={`/flat/rotations/${rotationToAlert.id}`}>
+          <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-center justify-between shadow-sm cursor-pointer hover:shadow-md transition-all">
+            <div className="flex items-start gap-3">
+              <RefreshCw className="w-5 h-5 text-violet-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-violet-900">Your turn: {rotationToAlert.name}</h3>
+                <p className={`text-sm mt-0.5 ${rotationToAlert.currentCycle?.status === 'OVERDUE' ? 'text-red-600 font-medium' : 'text-violet-600'}`}>
+                  {rotationToAlert.currentCycle?.status === 'OVERDUE' 
+                    ? `Overdue since ${new Date(rotationToAlert.currentCycle?.dueDate || '').toLocaleDateString()}`
+                    : `Due ${new Date(rotationToAlert.currentCycle?.dueDate || '').toLocaleDateString()}`
+                  }
+                </p>
+                {myOverdueRotationCount > 1 && (
+                  <p className="text-xs text-violet-600 mt-1">+{myOverdueRotationCount - 1} more duties due</p>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-violet-400 flex-shrink-0" />
+          </div>
+        </Link>
+      )}
+
+      {myOverdueTasks.length > 0 && (
+        <Link to="/flat/tasks">
+          <div className="bg-cyan-50 border border-cyan-200 rounded-xl px-4 py-2 flex items-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer">
+            <ClipboardList className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-cyan-800 flex-1">
+              You have {myOverdueTasks.length} overdue task{myOverdueTasks.length !== 1 ? 's' : ''}
+            </span>
+            <ChevronRight className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+          </div>
+        </Link>
+      )}
+
+      {billToAlert && (
+        <Link to="/flat/bills">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-all cursor-pointer">
+            <BellRing className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-amber-900 block truncate">
+                {Math.ceil((new Date(billToAlert.nextDueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) === 0 
+                  ? `Due today: ${billToAlert.title}` 
+                  : `${billToAlert.title} due in ${Math.ceil((new Date(billToAlert.nextDueDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))} days`
+                }
+                {billToAlert.amountEstimate ? ` — ${currentFlat?.currency}${billToAlert.amountEstimate}` : ''}
+              </span>
+              {billsDueSoon.length > 1 && (
+                <span className="text-xs text-amber-700 block mt-0.5">+{billsDueSoon.length - 1} more</span>
+              )}
+            </div>
+            <ChevronRight className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          </div>
         </Link>
       )}
 

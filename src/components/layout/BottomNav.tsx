@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Receipt, Calendar, Settings } from 'lucide-react';
+import { Home, Receipt, Calendar, Settings, ArrowLeftRight, Building2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function BottomNav() {
@@ -7,10 +7,12 @@ export function BottomNav() {
   const path = location.pathname;
 
   const tabs = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Expenses', href: '/expenses', icon: Receipt },
-    { name: 'Rent', href: '/rent', icon: Calendar },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Dashboard', href: '/dashboard', icon: Home, color: 'text-indigo-600', fill: 'fill-indigo-100' },
+    { name: 'Expenses', href: '/expenses', icon: Receipt, color: 'text-indigo-600', fill: 'fill-indigo-100' },
+    { name: 'Rent', href: '/rent', icon: Calendar, color: 'text-indigo-600', fill: 'fill-indigo-100' },
+    { name: 'Settle', href: '/settle', icon: ArrowLeftRight, color: 'text-indigo-600', fill: 'fill-indigo-100' },
+    { name: 'Flat', href: '/flat', icon: Building2, color: 'text-violet-600', fill: 'fill-violet-100' },
+    { name: 'Settings', href: '/settings', icon: Settings, color: 'text-indigo-600', fill: 'fill-indigo-100' },
   ];
 
   return (
@@ -25,11 +27,11 @@ export function BottomNav() {
               to={tab.href}
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors",
-                isActive ? "text-indigo-600" : "text-gray-500 hover:text-gray-900"
+                isActive ? tab.color : "text-gray-500 hover:text-gray-900"
               )}
             >
-              <Icon className={cn("h-6 w-6", isActive && "fill-indigo-100")} />
-              <span className="text-[10px] font-medium">{tab.name}</span>
+              <Icon className={cn("h-5 w-5 sm:h-6 sm:w-6", isActive && tab.fill)} />
+              <span className="hidden sm:inline text-[10px] font-medium">{tab.name}</span>
             </Link>
           );
         })}

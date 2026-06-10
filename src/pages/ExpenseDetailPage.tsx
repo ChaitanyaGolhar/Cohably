@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, AlertTriangle } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  MessageSquare, 
+  AlertTriangle,
+  MoreVertical,
+  Pencil,
+  Trash2
+} from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useFlatStore } from '../store/flatStore';
 import { useExpenseDetail } from '../hooks/useExpenseDetail';
@@ -11,6 +18,9 @@ import { AmountDisplay } from '../components/ui/AmountDisplay';
 import { Button } from '../components/ui/Button';
 import { formatTimeAgo, formatCurrency } from '../lib/utils';
 import { Textarea } from '../components/ui/Textarea';
+import { DropdownMenu } from '../components/ui/DropdownMenu';
+import { EditExpenseSheet } from '../components/EditExpenseSheet';
+import { useExpenseMutations } from '../hooks/useExpenseMutations';
 import type { Comment as ApiComment } from '../types/api';
 
 export default function ExpenseDetailPage() {
@@ -20,6 +30,7 @@ export default function ExpenseDetailPage() {
   const currentFlat = useFlatStore((s) => s.currentFlat);
   
   const [commentText, setCommentText] = useState('');
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const {
     expense,
@@ -31,6 +42,8 @@ export default function ExpenseDetailPage() {
     toggleDispute,
     isTogglingDispute
   } = useExpenseDetail(currentFlat?.id || '', id || '');
+
+  const { deleteExpense } = useExpenseMutations(currentFlat?.id);
 
   if (isExpenseLoading) {
     return <div className="p-8 text-center animate-pulse text-gray-500">Loading expense...</div>;
@@ -59,7 +72,35 @@ export default function ExpenseDetailPage() {
           <ArrowLeft className="h-6 w-6 text-gray-700" />
         </button>
         <h1 className="text-xl font-bold text-gray-900">Expense Details</h1>
-        <div className="w-10" />
+        <div className="w-10">
+          {expense.paidBy === user?.id && (
+            <DropdownMenu
+              trigger={
+                <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                  <MoreVertical className="h-5 w-5 text-gray-700" />
+                </button>
+              }
+              items={[
+                {
+                  label: 'Edit Expense',
+                  icon: <Pencil className="h-4 w-4" />,
+                  onClick: () => setIsEditOpen(true),
+                },
+                {
+                  label: 'Delete Expense',
+                  icon: <Trash2 className="h-4 w-4" />,
+                  variant: 'danger',
+                  onClick: () => {
+                    if (window.confirm('Are you sure you want to delete this expense?')) {
+                      deleteExpense(expense.id).then(() => navigate('/dashboard'));
+                    }
+                  },
+                },
+              ]}
+              align="right"
+            />
+          )}
+        </div>
       </div>
 
       {expense.isDisputed && (
@@ -170,6 +211,13 @@ export default function ExpenseDetailPage() {
           </Button>
         </form>
       </div>
+
+      <EditExpenseSheet
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        expense={expense}
+        flatId={currentFlat.id}
+      />
     </div>
   );
 }

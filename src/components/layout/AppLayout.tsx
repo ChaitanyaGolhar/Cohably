@@ -6,11 +6,17 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useFlatStore } from '../../store/flatStore';
 
+import { useUnreadCount } from '../../hooks/useUnreadCount';
+import { NotificationBell } from '../ui/NotificationBell';
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const flatId = user?.membership?.flatId;
   const setFlat = useFlatStore((s) => s.setFlat);
   
+  
+  const { unreadCount } = useUnreadCount(flatId);
+
   // Fetch Flat details + members globally
   const { data: flatData } = useQuery({
     queryKey: ['flat', flatId],
@@ -41,7 +47,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <span className="font-semibold text-gray-900">{flatData?.name || 'Cohably'}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <NotificationBell unreadCount={unreadCount} />
             <Avatar src={user?.avatarUrl} name={user?.name} size="sm" />
           </div>
         </div>
@@ -54,6 +61,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation */}
       <BottomNav />
+
     </div>
   );
 }
